@@ -9,7 +9,7 @@ final class DocumentSplitter
     /**
      * @return Document[]
      */
-    public static function splitDocument(Document $document, int $maxLength = 1000, string $separator = ' '): array
+    public static function splitDocument(Document $document, int $maxLength = 1000, string|array $separator = ' '): array
     {
         $text = $document->content;
         if (empty($text)) {
@@ -19,7 +19,7 @@ final class DocumentSplitter
             return [];
         }
 
-        if ($separator === '') {
+        if ($separator === '' || $separator === []) {
             return [];
         }
 
@@ -27,17 +27,18 @@ final class DocumentSplitter
             return [$document];
         }
 
+        if (is_string($separator)) {
+            $separator = [$separator];
+        }
+
+        $words = preg_split('/([' . implode('\\', $separator) . ']+)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+
         $chunks = [];
-        $words = explode($separator, $text);
         $currentChunk = '';
 
         foreach ($words as $word) {
-            if (strlen($currentChunk.$separator.$word) <= $maxLength || empty($currentChunk)) {
-                if (empty($currentChunk)) {
-                    $currentChunk = $word;
-                } else {
-                    $currentChunk .= $separator.$word;
-                }
+            if (strlen($currentChunk.$word) <= $maxLength || empty($currentChunk)) {
+                $currentChunk .= $word;
             } else {
                 $chunks[] = trim($currentChunk);
                 $currentChunk = $word;
@@ -68,7 +69,7 @@ final class DocumentSplitter
      * @param  Document[]  $documents
      * @return Document[]
      */
-    public static function splitDocuments(array $documents, int $maxLength = 1000, string $separator = '.'): array
+    public static function splitDocuments(array $documents, int $maxLength = 1000, string|array $separator = '.'): array
     {
         $splittedDocuments = [];
         foreach ($documents as $document) {
